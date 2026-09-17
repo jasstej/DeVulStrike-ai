@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DeVulStrike AI - Health Dashboard</title>
+<style>
+  :root {
+    --bg: #0d0d12;
+    --panel: #15151d;
+    --panel2: #1b1b26;
+    --border: #262634;
+    --red: #ff3b3b;
+    --red-dim: #b8213a;
+    --green: #2ee66a;
+    --amber: #ffb020;
+    --text: #e6e6ef;
+    --muted: #8a8a9e;
+    --accent: #ff5470;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: radial-gradient(1200px 600px at 20% -10%, #1a0e14 0%, var(--bg) 60%);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; }
+
+  /* header */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 46px; height: 46px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--red-dim), var(--red));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 800; color: #fff;
+    box-shadow: 0 0 24px rgba(255,60,60,.35);
+  }
+  .brand h1 { font-size: 22px; letter-spacing: .5px; }
+  .brand h1 span { color: var(--accent); }
+  .brand small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; margin-top: 2px; }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: 14px;
+  }
+  .status-pill .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .status-pill.ok { background: rgba(46,230,106,.12); color: var(--green); border: 1px solid rgba(46,230,106,.3); }
+  .status-pill.ok .dot { background: var(--green); box-shadow: 0 0 10px var(--green); }
+  .status-pill.bad { background: rgba(255,59,59,.12); color: var(--red); border: 1px solid rgba(255,59,59,.3); }
+  .status-pill.bad .dot { background: var(--red); box-shadow: 0 0 10px var(--red); }
+
+  /* top stat cards */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 14px; margin-bottom: 24px;
+  }
+  .card {
+    background: linear-gradient(160deg, var(--panel), var(--panel2));
+    border: 1px solid var(--border); border-radius: 14px; padding: 18px;
+  }
+  .card .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .card .value { font-size: 30px; font-weight: 800; }
+  .card .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .value.green { color: var(--green); }
+  .value.red { color: var(--red); }
+  .value.amber { color: var(--amber); }
+
+  /* progress bar */
+  .progress { margin-bottom: 24px; }
+  .progress .top { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .bar { height: 14px; border-radius: 999px; background: var(--border); overflow: hidden; }
+  .bar > div {
+    height: 100%; border-radius: 999px;
+    background: linear-gradient(90deg, var(--red-dim), var(--accent));
+    transition: width .4s ease;
+  }
+
+  /* sections */
+  .section { margin-bottom: 24px; }
+  .section h2 {
+    font-size: 15px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px;
+    margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+  .tool {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 13px;
+  }
+  .tool .name { font-weight: 600; }
+  .badge {
+    font-size: 10px; font-weight: 700; padding: 2px 9px; border-radius: 999px; letter-spacing: .5px;
+  }
+  .badge.ok { background: rgba(46,230,106,.12); color: var(--green); }
+  .badge.no { background: rgba(255,59,59,.12); color: var(--red); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  @media (max-width: 760px) { .two-col { grid-template-columns: 1fr; } }
+  .dl { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .dl:last-child { border-bottom: none; }
+  .dl .k { color: var(--muted); }
+  .dl .v { font-weight: 600; }
+
+  #meta { text-align: center; color: var(--muted); font-size: 12px; margin-top: 30px; }
+  .loading { text-align: center; color: var(--muted); padding: 60px; font-size: 15px; }
+  .error-box {
+    background: rgba(255,59,59,.08); border: 1px solid rgba(255,59,59,.3);
+    color: #ff8f8f; padding: 20px; border-radius: 12px; text-align: center;
+  }
+  .tooltip { position: relative; }
+  .tooltip:hover::after {
+    content: attr(data-tip); position: absolute; bottom: 130%; left: 0;
+    background: #222; color: #eee; padding: 4px 8px; border-radius: 6px; font-size: 11px;
+    white-space: nowrap; z-index: 10;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">H</div>
+      <div>
+        <h1>DeVulStrike <span>AI</span></h1>
+        <small>Offensive Intelligence Core &middot; v6.0.0</small>
+      </div>
+    </div>
+    <div class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Loading&hellip;</span></div>
+  </header>
+
+  <div id="content"><div class="loading">Connecting to DeVulStrike API&hellip;</div></div>
+
+  <div id="meta"></div>
+</div>
+
+<script>
+(async function () {
+  const content = document.getElementById('content');
+  const pill = document.getElementById('statusPill');
+  const statusText = document.getElementById('statusText');
+  const meta = document.getElementById('meta');
+
+  try {
+    const res = await fetch('/health', { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const d = await res.json();
+
+    const ok = d.status === 'healthy';
+    pill.className = 'status-pill ' + (ok ? 'ok' : 'bad');
+    pill.querySelector('.dot').style.animation = 'none';
+    statusText.textContent = ok ? 'SYSTEM OPERATIONAL' : d.status.toUpperCase() + ' / ' + d.message;
+
+    const total = d.total_tools_count || 0;
+    const avail = d.total_tools_available || 0;
+    const pct = total ? Math.round((avail / total) * 100) : 0;
+    const cats = d.category_stats || {};
+
+    const sys = (d.telemetry && d.telemetry.system_metrics) || {};
+    const uptime = formatUptime(d.uptime);
+
+    let toolGrids = '';
+    const toolGroups = {
+      'Essential': ['nmap','gobuster','dirb','nikto','sqlmap','hydra','john','hashcat'],
+      'Network': ['rustscan','masscan','autorecon','nbtscan','arp-scan','responder','nxc','enum4linux-ng','rpcclient','enum4linux'],
+      'Web Security': ['ffuf','feroxbuster','dirsearch','dotdotpwn','xsser','wfuzz','gau','waybackurls','arjun','paramspider','x8','jaeles','dalfox','httpx','wafw00f','burpsuite','zaproxy','katana','hakrawler'],
+      'Vuln Scanning': ['nuclei','wpscan','graphql-scanner','jwt-analyzer'],
+      'Password': ['medusa','patator','hash-identifier','ophcrack','hashcat-utils'],
+      'Binary': ['gdb','radare2','binwalk','ropgadget','checksec','objdump','ghidra','pwntools','one-gadget','ropper','angr','libc-database','pwninit'],
+      'Forensics': ['volatility3','vol','steghide','hashpump','foremost','exiftool','strings','xxd','file','photorec','testdisk','scalpel','bulk-extractor','stegsolve','zsteg','outguess'],
+      'Cloud': ['prowler','scout-suite','trivy','kube-hunter','kube-bench','docker-bench-security','checkov','terrascan','falco','clair'],
+      'OSINT': ['amass','subfinder','fierce','dnsenum','theharvester','sherlock','social-analyzer','recon-ng','maltego','spiderfoot','shodan-cli','censys-cli','have-i-been-pwned'],
+      'Exploitation': ['metasploit','exploit-db','searchsploit'],
+      'API': ['api-schema-analyzer','postman','insomnia','curl','httpie','anew','qsreplace','uro'],
+      'Wireless': ['kismet','wireshark','tshark','tcpdump'],
+      'Additional': ['smbmap','volatility','sleuthkit','autopsy','evil-winrm','airmon-ng','airodump-ng','aireplay-ng','aircrack-ng','msfvenom','msfconsole']
+    };
+
+    for (const [group, tools] of Object.entries(toolGroups)) {
+      const availCount = tools.filter(t => d.tools_status && d.tools_status[t]).length;
+      const items = tools.map(t => {
+        const on = d.tools_status && d.tools_status[t];
+        return `<div class="tool"><span class="name">${t}</span><span class="badge ${on?'ok':'no'}">${on?'● ONLINE':'○ MISSING'}</span></div>`;
+      }).join('');
+      toolGrids += `
+        <div class="section">
+          <h2>${group} <span style="color:var(--accent)">${availCount}/${tools.length}</span></h2>
+          <div class="grid">${items}</div>
+        </div>`;
+    }
+
+    const cacheStats = d.cache_stats || {};
+    const telemetry = d.telemetry || {};
+    const catRows = Object.entries(cats).map(([k, v]) =>
+      `<div class="dl"><span class="k">${cap(k)}</span><span class="v ${v.available >= v.total ? 'green' : (v.available ? 'amber':'red')}">${v.available}/${v.total}</span></div>`
+    ).join('');
+
+    content.innerHTML = `
+      <div class="stats">
+        <div class="card"><div class="label">Tools Available</div><div class="value green">${avail}<span style="font-size:16px;color:var(--muted)">/${total}</span></div><div class="sub">${pct}% of installed toolkit</div></div>
+        <div class="card"><div class="label">Uptime</div><div class="value">${uptime.str}</div><div class="sub">since server start</div></div>
+        <div class="card"><div class="label">CPU Usage</div><div class="value ${cpuClass(sys.cpu_percent)}">${fmt(sys.cpu_percent)}%</div><div class="sub">system load</div></div>
+        <div class="card"><div class="label">Memory Usage</div><div class="value ${cpuClass(sys.memory_percent)}">${fmt(sys.memory_percent)}%</div><div class="sub">system RAM</div></div>
+      </div>
+
+      <div class="progress">
+        <div class="top"><span>Toolkit Coverage</span><span>${pct}%</span></div>
+        <div class="bar"><div style="width:${pct}%"></div></div>
+      </div>
+
+      <div class="two-col">
+        <div class="card">
+          <div class="label">Category Breakdown</div>
+          ${catRows || '<div class="dl"><span>No data</span></div>'}
+        </div>
+        <div class="card">
+          <div class="label">Performance &amp; Cache</div>
+          <div class="dl"><span class="k">Commands Executed</span><span class="v green">${telemetry.commands_executed || 0}</span></div>
+          <div class="dl"><span class="k">Success Rate</span><span class="v">${telemetry.success_rate || '0%'}</span></div>
+          <div class="dl"><span class="k">Avg Exec Time</span><span class="v">${telemetry.average_execution_time || '0s'}</span></div>
+          <div class="dl"><span class="k">Cache Hits</span><span class="v">${cacheStats.hits || 0}</span></div>
+          <div class="dl"><span class="k">Cache Misses</span><span class="v">${cacheStats.misses || 0}</span></div>
+          <div class="dl"><span class="k">Cache Rate</span><span class="v green">${cacheStats.hit_rate || '0%'}</span></div>
+          <div class="dl"><span class="k">Disk Usage</span><span class="v ${cpuClass(sys.disk_usage)}">${fmt(sys.disk_usage)}%</span></div>
+        </div>
+      </div>
+
+      ${toolGrids}
+    `;
+
+    meta.textContent = `DeVulStrike AI ${d.version} · Updated ${new Date().toLocaleTimeString()} · ${avail}/${total} tools online`;
+    setInterval(() => location.reload(), 30000);
+  } catch (e) {
+    pill.className = 'status-pill bad';
+    statusText.textContent = 'SERVER UNREACHABLE';
+    content.innerHTML = `<div class="error-box"><strong>Unable to reach DeVulStrike API.</strong><br><br>${e.message}<br><br>Make sure the backend server is running on port 8888.</div>`;
+    meta.textContent = '';
+  }
+
+  function cap(s) { return s.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()); }
+  function fmt(v) { return (v === undefined || v === null || isNaN(v)) ? '—' : v; }
+  function cpuClass(v) {
+    if (v === undefined || v === null) return '';
+    return v >= 90 ? 'red' : (v >= 75 ? 'amber' : 'green');
+  }
+  function formatUptime(sec) {
+    if (!sec) return { str: '—' };
+    sec = Math.floor(sec);
+    const d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60;
+    let str = '';
+    if (d) str += d + 'd ';
+    if (h) str += h + 'h ';
+    if (m) str += m + 'm ';
+    if (!str) str = s + 's';
+    return { str: str.trim() };
+  }
+})();
+</script>
+</body>
+</html>

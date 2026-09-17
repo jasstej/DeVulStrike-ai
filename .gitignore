@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual environment
+DeVulStrike-env/
+DeVulStrike_env/
+hexstrike-env/
+venv/
+.env/
+
+# Runtime logs (never commit)
+*.log
+server_stdout.log
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
